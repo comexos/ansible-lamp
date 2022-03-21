@@ -1,0 +1,2 @@
+db_name: "{{ sys_user }}_1"
+db_user: "{{ sys_user }}"

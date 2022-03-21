@@ -1,0 +1,6 @@
+srv_admin: "devops@example.com"
+web_prefix: "/srv/www"
+web_home: "{{ web_prefix }}/{{ sys_user }}"
+web_htdocs: "{{ web_home }}/htdocs"
+web_logs: "{{ web_home }}/logs"
+web_fcgid: "{{ web_prefix }}/.fcgid/{{ sys_user }}"

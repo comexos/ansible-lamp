@@ -1,0 +1,25 @@
+#!/usr/bin/env ansible-playbook
+
+# Needs the following parameters:
+# sys_id: e.g. 1001
+# sys_user: e.g. 'web0023'
+# web_name: e.g. 'example.com'
+# web_aliases: e.g. 'www.example.com en.example.com de.example.com'
+
+# ansible-playbook -i <SERVERIP>, web.yml -e 'sys_user=<SYS_USER> web_name=<FQDN> web_aliases="[FQDN1 FQDN2 FQDN3 ...]>"' -vv
+
+---
+- name: Add or modify web
+  hosts: all
+  gather_facts: true
+  pre_tasks:
+    - fail:
+        msg: "Please specify all parameters, e.g.: -e 'sys_user=web0007 web_name=example.com'"
+      when: sys_user is not defined or
+            web_name is not defined
+  roles:
+    - role: web_add
+      tags: web
+    - role: db_add
+      tags: db
+      when: db_create is defined

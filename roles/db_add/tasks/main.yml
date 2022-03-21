@@ -1,0 +1,24 @@
+- name: Generate MariaDB Password
+  set_fact:
+    db_password: "{{ lookup('password', '/dev/null length=24') }}"
+    echo_pw: true
+  when: db_password is not defined
+
+- name: Create DB
+  mysql_db:
+    name: "{{ db_name }}"
+    collation: utf8mb4_general_ci
+    encoding: utf8mb4
+    login_unix_socket: "/var/run/mysqld/mysqld.sock"
+
+- name: Create DB User
+  mysql_user:
+    name:     "{{ db_user }}"
+    password: "{{ db_password }}"
+    priv:     "{{ db_name }}.*:ALL"
+    state: present
+    login_unix_socket: "/var/run/mysqld/mysqld.sock"
+
+- debug:
+    msg: "DB Password: {{ db_password }}"
+  when: echo_pw is defined

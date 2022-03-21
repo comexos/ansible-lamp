@@ -1,0 +1,10 @@
+#!/bin/sh
+INSTANCE="{{ sys_user }}"
+exec /usr/bin/php-cgi \
+  -d error_log="{{ web_logs }}/php-error.log" \
+  -d open_basedir="{{ web_home }}:/usr/share" \
+  -d upload_tmp_dir="{{ web_home }}/tmp" \
+  -d session.save_path="{{ web_home }}/tmp" \
+  -d sys_temp_dir="{{ web_home }}/tmp" \
+  -d sendmail_path="/usr/sbin/sendmail -t -i -f${INSTANCE}@{{ web_name }}" \
+  $1

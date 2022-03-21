@@ -1,0 +1,52 @@
+---
+- name: add system user
+  user: name={{ sys_user }} uid={{ sys_id | default(omit) }} createhome=no home={{ web_home }} shell=/usr/sbin/nologin comment={{ web_name }}
+
+- name: add www-data to group
+  user: name=www-data append=yes groups={{ sys_user }}
+
+- name: create home directory
+  file: path={{ web_home }}                              owner=root           group={{ sys_user }} mode=0750 state=directory
+- file: path={{ web_htdocs }}                            owner={{ sys_user }} group={{ sys_user }} mode=0755 state=directory
+- file: path={{ web_home }}/private                      owner={{ sys_user }} group={{ sys_user }} mode=0755 state=directory
+- file: path={{ web_home }}/backup                       owner={{ sys_user }} group={{ sys_user }} mode=0755 state=directory
+- file: path={{ web_logs }}                              owner={{ sys_user }} group={{ sys_user }} mode=0755 state=directory
+- file: path={{ web_home }}/run                          owner={{ sys_user }} group={{ sys_user }} mode=0755 state=directory
+- file: path={{ web_home }}/tmp                          owner={{ sys_user }} group={{ sys_user }} mode=0755 state=directory
+- file: path={{ web_home }}/.ssh                         owner={{ sys_user }} group={{ sys_user }} mode=0700 state=directory
+- file: path={{ web_home }}/.ssh/authorized_keys         owner={{ sys_user }} group={{ sys_user }} mode=0600 state=touch
+- file: path={{ web_fcgid }}                             owner={{ sys_user }} group={{ sys_user }} mode=0550 state=directory
+- file: src={{ web_home }} dest=/srv/www/{{ web_name }}  owner={{ sys_user }} group={{ sys_user }} mode=0750 state=link
+
+- name: copy default config
+  ansible.builtin.template:
+    src: web.conf.j2
+    dest: "/etc/apache2/sites-available/{{ sys_user}}.conf"
+    owner: root
+    group: root
+    mode: u=rw,g=r,o=r
+
+- name: copy php config
+  ansible.builtin.template:
+    src: php-fcgid.j2
+    dest: "{{ web_fcgid }}/php-fcgid"
+    owner: "{{ sys_user }}"
+    group: "{{ sys_user }}"
+    mode: 0550
+
+- name: install letsencrypt certificates
+  shell: "certbot certonly --apache --email {{ srv_admin }} --non-interactive --domain {{ web_name }} {{ web_aliases | default('') | regex_replace('(\\S+)','-d \\1') }} --agree-tos"
+# Run command regardless of an existing certificate
+#  args:
+#    creates: /etc/letsencrypt/live/{{ web_name }}/cert.pem
+
+- name: check letsencrypt
+  ansible.builtin.stat:
+    path: /etc/letsencrypt/live/{{ web_name }}/cert.pem
+  register: certificate
+
+- name: activate config
+  file: src=../sites-available/{{ sys_user }}.conf dest=/etc/apache2/sites-enabled/{{ sys_user }}.conf force=yes state=link
+  when: certificate.stat.islnk is defined
+  notify:
+  - Reload apache2
